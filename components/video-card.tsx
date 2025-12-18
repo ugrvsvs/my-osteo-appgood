@@ -29,6 +29,12 @@ export function VideoCard({ video, viewMode, onEdit, onDelete, selectable, selec
   const { getBodyZoneName } = useData()
   const thumbnail = getThumbnailUrl(video)
 
+  const openVideoUrl = () => {
+    if (video.url) {
+      window.open(video.url, "_blank")
+    }
+  }
+
   if (viewMode === "list") {
     return (
       <Card
@@ -36,11 +42,15 @@ export function VideoCard({ video, viewMode, onEdit, onDelete, selectable, selec
           "transition-all",
           selectable && "cursor-pointer hover:border-primary",
           selected && "border-primary bg-primary/5",
+          !selectable && "cursor-pointer hover:border-primary",
         )}
         onClick={selectable ? onSelect : undefined}
       >
         <CardContent className="flex items-center gap-4 p-4">
-          <div className="relative h-20 w-36 flex-shrink-0 overflow-hidden rounded-md bg-muted">
+          <div
+            className="relative h-20 w-36 flex-shrink-0 overflow-hidden rounded-md bg-muted cursor-pointer hover:opacity-80 transition-opacity"
+            onClick={!selectable ? openVideoUrl : undefined}
+          >
             <img src={thumbnail || `${process.env.NEXT_PUBLIC_BASE_PATH || ""}/placeholder.svg`} alt={video.title} className="h-full w-full object-cover" />
             <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 hover:opacity-100 transition-opacity">
               <Play className="h-8 w-8 text-white" />
@@ -96,17 +106,21 @@ export function VideoCard({ video, viewMode, onEdit, onDelete, selectable, selec
         "overflow-hidden transition-all",
         selectable && "cursor-pointer hover:border-primary",
         selected && "border-primary bg-primary/5",
+        !selectable && "cursor-pointer hover:border-primary hover:shadow-md",
       )}
       onClick={selectable ? onSelect : undefined}
     >
-      <div className="relative aspect-video bg-muted">
+      <div
+        className="relative aspect-video bg-muted cursor-pointer hover:opacity-90 transition-opacity"
+        onClick={!selectable ? openVideoUrl : undefined}
+      >
         <img src={thumbnail || `${process.env.NEXT_PUBLIC_BASE_PATH || ""}/placeholder.svg`} alt={video.title} className="h-full w-full object-cover" />
         <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 hover:opacity-100 transition-opacity">
           <Play className="h-12 w-12 text-white" />
         </div>
         {!selectable && (
           <DropdownMenu>
-            <DropdownMenuTrigger asChild>
+            <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
               <Button variant="secondary" size="icon" className="absolute top-2 right-2 h-8 w-8">
                 <MoreVertical className="h-4 w-4" />
               </Button>
