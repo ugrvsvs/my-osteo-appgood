@@ -1,34 +1,40 @@
-import db from '../database/init.js'
-import { promisify } from 'util'
+import pool from '../database/init.js'
 
-// Промисифицируем методы sqlite3
-const runAsync = promisify(db.run.bind(db))
-const getAsync = promisify(db.get.bind(db))
-const allAsync = promisify(db.all.bind(db))
-
+/**
+ * Выполнить SQL запрос с параметрами
+ */
 export async function dbRun(sql, params = []) {
-  return new Promise((resolve, reject) => {
-    db.run(sql, params, function(err) {
-      if (err) reject(err)
-      else resolve({ lastID: this.lastID, changes: this.changes })
-    })
-  })
+  const connection = await pool.getConnection()
+  try {
+    const [result] = await connection.execute(sql, params)
+    return result
+  } finally {
+    connection.release()
+  }
 }
 
+/**
+ * Получить одну строку
+ */
 export async function dbGet(sql, params = []) {
-  return new Promise((resolve, reject) => {
-    db.get(sql, params, (err, row) => {
-      if (err) reject(err)
-      else resolve(row)
-    })
-  })
+  const connection = await pool.getConnection()
+  try {
+    const [rows] = await connection.execute(sql, params)
+    return rows[0] || null
+  } finally {
+    connection.release()
+  }
 }
 
+/**
+ * Получить все строки
+ */
 export async function dbAll(sql, params = []) {
-  return new Promise((resolve, reject) => {
-    db.all(sql, params, (err, rows) => {
-      if (err) reject(err)
-      else resolve(rows || [])
-    })
-  })
+  const connection = await pool.getConnection()
+  try {
+    const [rows] = await connection.execute(sql, params)
+    return rows || []
+  } finally {
+    connection.release()
+  }
 }

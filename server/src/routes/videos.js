@@ -8,12 +8,7 @@ const router = express.Router()
 router.get('/', async (req, res, next) => {
   try {
     const videos = await dbAll('SELECT * FROM videos ORDER BY created_at DESC')
-    const parsed = videos.map(v => ({
-      ...v,
-      tags: JSON.parse(v.tags || '[]'),
-      bodyZones: JSON.parse(v.body_zones || '[]')
-    }))
-    res.json(parsed)
+    res.json(videos)
   } catch (err) {
     next(err)
   }
@@ -24,9 +19,6 @@ router.get('/:id', async (req, res, next) => {
   try {
     const video = await dbGet('SELECT * FROM videos WHERE id = ?', [req.params.id])
     if (!video) return res.status(404).json({ error: 'Video not found' })
-    
-    video.tags = JSON.parse(video.tags || '[]')
-    video.bodyZones = JSON.parse(video.body_zones || '[]')
     res.json(video)
   } catch (err) {
     next(err)
@@ -52,9 +44,6 @@ router.post('/', async (req, res, next) => {
     )
 
     const video = await dbGet('SELECT * FROM videos WHERE id = ?', [id])
-    video.tags = JSON.parse(video.tags || '[]')
-    video.bodyZones = JSON.parse(video.body_zones || '[]')
-    
     res.status(201).json(video)
   } catch (err) {
     next(err)
@@ -76,9 +65,6 @@ router.put('/:id', async (req, res, next) => {
 
     const video = await dbGet('SELECT * FROM videos WHERE id = ?', [req.params.id])
     if (!video) return res.status(404).json({ error: 'Video not found' })
-    
-    video.tags = JSON.parse(video.tags || '[]')
-    video.bodyZones = JSON.parse(video.body_zones || '[]')
     res.json(video)
   } catch (err) {
     next(err)

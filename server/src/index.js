@@ -1,7 +1,7 @@
 import express from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
-import db from './database/init.js'
+import { initializeDatabase } from './database/init.js'
 
 // Инициализация видео
 import videoRoutes from './routes/videos.js'
@@ -47,7 +47,18 @@ app.use((err, req, res, next) => {
   })
 })
 
-app.listen(PORT, () => {
-  console.log(`\n🚀 Сервер запущен на http://localhost:${PORT}`)
-  console.log(`📊 БД: ${process.env.DATABASE_PATH || './data/osteo.db'}\n`)
-})
+// Инициализировать БД и запустить сервер
+async function start() {
+  try {
+    await initializeDatabase()
+    app.listen(PORT, () => {
+      console.log(`\n🚀 Сервер запущен на http://localhost:${PORT}`)
+      console.log(`📊 БД: MySQL ${process.env.DB_HOST}:${process.env.DB_PORT}/${process.env.DB_NAME}\n`)
+    })
+  } catch (error) {
+    console.error('❌ Ошибка запуска сервера:', error)
+    process.exit(1)
+  }
+}
+
+start()
