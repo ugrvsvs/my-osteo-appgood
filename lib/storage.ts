@@ -2,6 +2,7 @@ import type { AppData, Video, Patient, Assignment, VideoView, Template, BodyZone
 import { DEFAULT_BODY_ZONES } from "./types"
 
 const STORAGE_KEY = "osteo-app-data"
+const INITIALIZED_KEY = "osteo-app-initialized"
 
 const defaultData: AppData = {
   videos: [],
@@ -9,7 +10,7 @@ const defaultData: AppData = {
   assignments: [],
   videoViews: [],
   templates: [],
-  bodyZones: [], // добавлено
+  bodyZones: [],
 }
 
 // Получить все данные
@@ -17,12 +18,19 @@ export function getData(): AppData {
   if (typeof window === "undefined") return defaultData
 
   const stored = localStorage.getItem(STORAGE_KEY)
-  if (!stored) return defaultData
+  if (!stored) {
+    // Первый раз - инициализируем с пустыми данными
+    const emptyData = { ...defaultData, bodyZones: DEFAULT_BODY_ZONES.map((zone, index) => ({ ...zone, id: generateId() })) }
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(emptyData))
+    localStorage.setItem(INITIALIZED_KEY, "true")
+    return emptyData
+  }
 
   try {
     const data = JSON.parse(stored) as AppData
-    if (!data.bodyZones) {
-      data.bodyZones = []
+    if (!data.bodyZones || data.bodyZones.length === 0) {
+      data.bodyZones = DEFAULT_BODY_ZONES.map((zone, index) => ({ ...zone, id: generateId() }))
+      saveData(data)
     }
     return data
   } catch {
@@ -306,11 +314,15 @@ export function initializeSeedData(): boolean {
     return false
   }
 
+  // Загружаем seed данные только если БД пуста
   // Импортируем динамически, чтобы избежать циклических зависимостей
-  import("./seed-data").then(({ getSeedData }) => {
+  try {
+    const { getSeedData } = require("./seed-data")
     const seedData = getSeedData()
     saveData(seedData)
-  })
+  } catch (error) {
+    console.error("Failed to load seed data:", error)
+  }
 
   return true
 }
