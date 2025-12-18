@@ -7,6 +7,16 @@ const nextConfig = {
   },
   images: {
     unoptimized: true,
+    remotePatterns: [
+      {
+        protocol: 'http',
+        hostname: 'localhost',
+      },
+      {
+        protocol: 'http',
+        hostname: '127.0.0.1',
+      },
+    ],
   },
   // Улучшенная маршрутизация для динамических сегментов
   rewrites: async () => {
@@ -16,8 +26,7 @@ const nextConfig = {
   },
   pageExtensions: ["ts", "tsx"],
   experimental: {
-    // Убедиться, что Next.js правильно обрабатывает динамические маршруты
-    strictNextHead: true,
+    // Улучшенная маршрутизация для динамических сегментов
   },
 }
 

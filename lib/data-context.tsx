@@ -112,14 +112,33 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
+  // Загрузить назначения с API
+  const loadAssignments = useCallback(async () => {
+    try {
+      const assignments = await api.assignmentsApi.getAll()
+      setData(prev => ({ 
+        ...prev, 
+        assignments: assignments.map(a => ({
+          ...a,
+          description: a.description || undefined,
+          expiresAt: a.expiresAt || undefined,
+        }))
+      }))
+    } catch (error) {
+      console.error('Failed to load assignments:', error)
+      const stored = storage.getData()
+      setData(prev => ({ ...prev, assignments: stored.assignments }))
+    }
+  }, [])
+
   const refresh = useCallback(async () => {
     setIsLoading(true)
     try {
-      await Promise.all([loadVideos(), loadPatients(), loadTemplates()])
+      await Promise.all([loadVideos(), loadPatients(), loadTemplates(), loadAssignments()])
     } finally {
       setIsLoading(false)
     }
-  }, [loadVideos, loadPatients, loadTemplates])
+  }, [loadVideos, loadPatients, loadTemplates, loadAssignments])
 
   useEffect(() => {
     storage.initializeSeedData()
@@ -203,10 +222,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     addAssignment: async (assignment) => {
       try {
         const result = await api.assignmentsApi.create(assignment)
-        setData(prev => ({ 
-          ...prev, 
-          assignments: [...prev.assignments, result]
-        }))
+        await loadAssignments()
         return result
       } catch (error) {
         console.error('Failed to add assignment:', error)
@@ -216,10 +232,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     updateAssignment: async (id, updates) => {
       try {
         const result = await api.assignmentsApi.update(id, updates)
-        setData(prev => ({
-          ...prev,
-          assignments: prev.assignments.map(a => a.id === id ? result : a)
-        }))
+        await loadAssignments()
         return result
       } catch (error) {
         console.error('Failed to update assignment:', error)
@@ -229,10 +242,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     deleteAssignment: async (id) => {
       try {
         await api.assignmentsApi.delete(id)
-        setData(prev => ({
-          ...prev,
-          assignments: prev.assignments.filter(a => a.id !== id)
-        }))
+        await loadAssignments()
         return true
       } catch (error) {
         console.error('Failed to delete assignment:', error)

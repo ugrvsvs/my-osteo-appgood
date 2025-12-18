@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { X, Search } from "lucide-react"
+import { getThumbnailSrcUrl } from "@/lib/utils"
 
 interface TemplateDialogProps {
   open: boolean
@@ -209,7 +210,7 @@ export function TemplateDialog({ open, onOpenChange, template, videos }: Templat
                     />
                     <div className="w-16 h-10 rounded overflow-hidden bg-muted flex-shrink-0">
                       <img
-                        src={video.thumbnailUrl || `${process.env.NEXT_PUBLIC_BASE_PATH || ""}/placeholder.svg?height=40&width=64&query=${video.title}`}
+                        src={getThumbnailSrcUrl(video.thumbnailUrl)}
                         alt={video.title}
                         className="w-full h-full object-cover"
                       />

@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { MoreVertical, Pencil, Trash2, VideoIcon, Calendar } from "lucide-react"
+import { getThumbnailSrcUrl } from "@/lib/utils"
 
 interface AssignmentCardProps {
   assignment: Assignment
@@ -94,11 +95,7 @@ export function AssignmentCard({
             {videos.slice(0, 4).map((video) => (
               <div key={video.id} className="flex-shrink-0 w-24 h-14 rounded overflow-hidden bg-muted">
                 <img
-                  src={
-                    video.thumbnailUrl ||
-                    `https://img.youtube.com/vi/${extractYoutubeId(video.url) || "placeholder"}/default.jpg` ||
-                    `${process.env.NEXT_PUBLIC_BASE_PATH || ""}/placeholder.svg`
-                  }
+                  src={getThumbnailSrcUrl(video.thumbnailUrl) || `https://img.youtube.com/vi/${extractYoutubeId(video.url) || "placeholder"}/default.jpg`}
                   alt={video.title}
                   className="w-full h-full object-cover"
                 />

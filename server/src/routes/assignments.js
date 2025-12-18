@@ -4,36 +4,90 @@ import { dbRun, dbGet, dbAll } from '../utils/db.js'
 
 const router = express.Router()
 
-// GET все назначения
-router.get('/', async (req, res, next) => {
-  try {
-    const assignments = await dbAll('SELECT * FROM assignments ORDER BY created_at DESC')
-    const parsed = assignments.map(a => ({
-      ...a,
-      videoIds: JSON.parse(a.video_ids || '[]'),
-      videoOrder: JSON.parse(a.video_order || '[]'),
-      isActive: Boolean(a.is_active)
-    }))
-    res.json(parsed)
-  } catch (err) {
-    next(err)
-  }
-})
-
-// GET назначения пациента
+// GET назначения пациента - ДОЛЖЕН БЫТЬ ДО GET /
 router.get('/patient/:patientId', async (req, res, next) => {
   try {
     const assignments = await dbAll(
       'SELECT * FROM assignments WHERE patient_id = ? ORDER BY created_at DESC',
       [req.params.patientId]
     )
-    const parsed = assignments.map(a => ({
-      ...a,
-      videoIds: JSON.parse(a.video_ids || '[]'),
-      videoOrder: JSON.parse(a.video_order || '[]'),
-      isActive: Boolean(a.is_active)
-    }))
+    const parsed = assignments.map(a => {
+      try {
+        const videoIds = typeof a.video_ids === 'string' ? JSON.parse(a.video_ids || '[]') : (Array.isArray(a.video_ids) ? a.video_ids : [])
+        const videoOrder = typeof a.video_order === 'string' ? JSON.parse(a.video_order || '[]') : (Array.isArray(a.video_order) ? a.video_order : [])
+        
+        return {
+          ...a,
+          videoIds: videoIds,
+          videoOrder: videoOrder,
+          isActive: Boolean(a.is_active)
+        }
+      } catch (e) {
+        console.error('Error parsing assignment JSON:', a)
+        return {
+          ...a,
+          videoIds: [],
+          videoOrder: [],
+          isActive: Boolean(a.is_active)
+        }
+      }
+    })
     res.json(parsed)
+  } catch (err) {
+    next(err)
+  }
+})
+
+// GET все назначения
+router.get('/', async (req, res, next) => {
+  try {
+    const assignments = await dbAll('SELECT * FROM assignments ORDER BY created_at DESC')
+    const parsed = assignments.map(a => {
+      try {
+        // Если video_ids уже массив, не парсим
+        const videoIds = typeof a.video_ids === 'string' ? JSON.parse(a.video_ids || '[]') : (Array.isArray(a.video_ids) ? a.video_ids : [])
+        const videoOrder = typeof a.video_order === 'string' ? JSON.parse(a.video_order || '[]') : (Array.isArray(a.video_order) ? a.video_order : [])
+        
+        return {
+          ...a,
+          videoIds: videoIds,
+          videoOrder: videoOrder,
+          isActive: Boolean(a.is_active)
+        }
+      } catch (e) {
+        console.error('Error parsing assignment JSON:', a)
+        return {
+          ...a,
+          videoIds: [],
+          videoOrder: [],
+          isActive: Boolean(a.is_active)
+        }
+      }
+    })
+    res.json(parsed)
+  } catch (err) {
+    next(err)
+  }
+})
+
+// GET назначение по ID
+router.get('/:id', async (req, res, next) => {
+  try {
+    const assignment = await dbGet('SELECT * FROM assignments WHERE id = ?', [req.params.id])
+    if (!assignment) return res.status(404).json({ error: 'Assignment not found' })
+    
+    try {
+      assignment.videoIds = typeof assignment.video_ids === 'string' ? JSON.parse(assignment.video_ids || '[]') : (Array.isArray(assignment.video_ids) ? assignment.video_ids : [])
+      assignment.videoOrder = typeof assignment.video_order === 'string' ? JSON.parse(assignment.video_order || '[]') : (Array.isArray(assignment.video_order) ? assignment.video_order : [])
+      assignment.isActive = Boolean(assignment.is_active)
+    } catch (e) {
+      console.error('Error parsing assignment JSON:', assignment)
+      assignment.videoIds = []
+      assignment.videoOrder = []
+      assignment.isActive = Boolean(assignment.is_active)
+    }
+    
+    res.json(assignment)
   } catch (err) {
     next(err)
   }
@@ -54,13 +108,20 @@ router.post('/', async (req, res, next) => {
     await dbRun(
       `INSERT INTO assignments (id, patient_id, title, description, video_ids, video_order, is_active, expires_at, created_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [id, patientId, title, description, JSON.stringify(videoIds || []), JSON.stringify(videoOrder || []), 1, expiresAt, now]
+      [id, patientId, title, description || null, JSON.stringify(videoIds || []), JSON.stringify(videoOrder || []), 1, expiresAt || null, now]
     )
 
     const assignment = await dbGet('SELECT * FROM assignments WHERE id = ?', [id])
-    assignment.videoIds = JSON.parse(assignment.video_ids || '[]')
-    assignment.videoOrder = JSON.parse(assignment.video_order || '[]')
-    assignment.isActive = Boolean(assignment.is_active)
+    try {
+      assignment.videoIds = typeof assignment.video_ids === 'string' ? JSON.parse(assignment.video_ids || '[]') : (Array.isArray(assignment.video_ids) ? assignment.video_ids : [])
+      assignment.videoOrder = typeof assignment.video_order === 'string' ? JSON.parse(assignment.video_order || '[]') : (Array.isArray(assignment.video_order) ? assignment.video_order : [])
+      assignment.isActive = Boolean(assignment.is_active)
+    } catch (e) {
+      console.error('Error parsing assignment JSON:', assignment)
+      assignment.videoIds = []
+      assignment.videoOrder = []
+      assignment.isActive = Boolean(assignment.is_active)
+    }
     
     res.status(201).json(assignment)
   } catch (err) {
@@ -77,15 +138,22 @@ router.put('/:id', async (req, res, next) => {
       `UPDATE assignments 
        SET title = ?, description = ?, video_ids = ?, video_order = ?, is_active = ?, expires_at = ?
        WHERE id = ?`,
-      [title, description, JSON.stringify(videoIds || []), JSON.stringify(videoOrder || []), isActive ? 1 : 0, expiresAt, req.params.id]
+      [title, description || null, JSON.stringify(videoIds || []), JSON.stringify(videoOrder || []), isActive ? 1 : 0, expiresAt || null, req.params.id]
     )
 
     const assignment = await dbGet('SELECT * FROM assignments WHERE id = ?', [req.params.id])
     if (!assignment) return res.status(404).json({ error: 'Assignment not found' })
     
-    assignment.videoIds = JSON.parse(assignment.video_ids || '[]')
-    assignment.videoOrder = JSON.parse(assignment.video_order || '[]')
-    assignment.isActive = Boolean(assignment.is_active)
+    try {
+      assignment.videoIds = typeof assignment.video_ids === 'string' ? JSON.parse(assignment.video_ids || '[]') : (Array.isArray(assignment.video_ids) ? assignment.video_ids : [])
+      assignment.videoOrder = typeof assignment.video_order === 'string' ? JSON.parse(assignment.video_order || '[]') : (Array.isArray(assignment.video_order) ? assignment.video_order : [])
+      assignment.isActive = Boolean(assignment.is_active)
+    } catch (e) {
+      console.error('Error parsing assignment JSON:', assignment)
+      assignment.videoIds = []
+      assignment.videoOrder = []
+      assignment.isActive = Boolean(assignment.is_active)
+    }
     res.json(assignment)
   } catch (err) {
     next(err)

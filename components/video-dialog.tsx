@@ -4,6 +4,8 @@ import type React from "react"
 
 import { useState, useEffect, useRef } from "react"
 import { useData } from "@/lib/data-context"
+import { uploadApi } from "@/lib/api"
+import { getThumbnailSrcUrl } from "@/lib/utils"
 import type { Video } from "@/lib/types"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
@@ -11,7 +13,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
-import { X, Upload, ImageIcon } from "lucide-react"
+import { X, Upload, ImageIcon, Loader2 } from "lucide-react"
 
 interface VideoDialogProps {
   open: boolean
@@ -32,6 +34,7 @@ export function VideoDialog({ open, onOpenChange, video, allTags }: VideoDialogP
   const [selectedZones, setSelectedZones] = useState<string[]>([])
   const [tags, setTags] = useState<string[]>([])
   const [newTag, setNewTag] = useState("")
+  const [isUploading, setIsUploading] = useState(false)
 
   useEffect(() => {
     if (video) {
@@ -71,22 +74,27 @@ export function VideoDialog({ open, onOpenChange, video, allTags }: VideoDialogP
     setTags(tags.filter((t) => t !== tag))
   }
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
 
-    // Проверяем размер (макс 2MB)
-    if (file.size > 2 * 1024 * 1024) {
-      alert("Файл слишком большой. Максимум 2MB.")
+    // Проверяем размер (макс 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Файл слишком большой. Максимум 5MB.")
       return
     }
 
-    const reader = new FileReader()
-    reader.onload = (event) => {
-      const base64 = event.target?.result as string
-      setThumbnailUrl(base64)
+    try {
+      setIsUploading(true)
+      const url = await uploadApi.uploadImage(file, file.name)
+      setThumbnailUrl(url)
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Ошибка загрузки'
+      alert(`Ошибка: ${errorMsg}`)
+      console.error('Upload error:', err)
+    } finally {
+      setIsUploading(false)
     }
-    reader.readAsDataURL(file)
   }
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -149,7 +157,15 @@ export function VideoDialog({ open, onOpenChange, video, allTags }: VideoDialogP
             <div className="flex gap-4 items-start">
               {thumbnailUrl ? (
                 <div className="relative w-40 h-24 rounded-md overflow-hidden border bg-muted">
-                  <img src={thumbnailUrl || `${process.env.NEXT_PUBLIC_BASE_PATH || ""}/placeholder.svg`} alt="Превью" className="w-full h-full object-cover" />
+                  <img 
+                    src={getThumbnailSrcUrl(thumbnailUrl)} 
+                    alt="Превью" 
+                    className="w-full h-full object-cover" 
+                    onError={(e) => {
+                      console.error('Image load error:', thumbnailUrl)
+                      e.currentTarget.style.display = 'none'
+                    }}
+                  />
                   <Button
                     type="button"
                     variant="destructive"
@@ -166,9 +182,18 @@ export function VideoDialog({ open, onOpenChange, video, allTags }: VideoDialogP
                 </div>
               )}
               <div className="flex flex-col gap-2">
-                <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
-                  <Upload className="h-4 w-4 mr-2" />
-                  Загрузить картинку
+                <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={isUploading}>
+                  {isUploading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Загрузка...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="h-4 w-4 mr-2" />
+                      Загрузить картинку
+                    </>
+                  )}
                 </Button>
                 <input
                   ref={fileInputRef}
@@ -176,8 +201,9 @@ export function VideoDialog({ open, onOpenChange, video, allTags }: VideoDialogP
                   accept="image/*"
                   onChange={handleImageUpload}
                   className="hidden"
+                  disabled={isUploading}
                 />
-                <p className="text-xs text-muted-foreground">JPG, PNG до 2MB</p>
+                <p className="text-xs text-muted-foreground">JPG, PNG до 5MB</p>
               </div>
             </div>
           </div>

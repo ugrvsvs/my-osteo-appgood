@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { MoreVertical, Pencil, Trash2, Play } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { cn, getThumbnailSrcUrl } from "@/lib/utils"
 
 interface VideoCardProps {
   video: Video
@@ -21,7 +21,10 @@ interface VideoCardProps {
 
 function getThumbnailUrl(video: Video): string {
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH || ""
-  if (video.thumbnailUrl) return video.thumbnailUrl
+  
+  if (video.thumbnailUrl) {
+    return getThumbnailSrcUrl(video.thumbnailUrl)
+  }
   return `${basePath}/placeholder.svg?height=180&width=320&query=video ${video.title}`
 }
 

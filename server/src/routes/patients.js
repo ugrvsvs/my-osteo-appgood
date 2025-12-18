@@ -15,6 +15,17 @@ router.get('/', async (req, res, next) => {
   }
 })
 
+// GET пациент по токену доступа (для публичной ссылки) - ДОЛЖЕН БЫТЬ ДО /:id
+router.get('/token/:token', async (req, res, next) => {
+  try {
+    const patient = await dbGet('SELECT * FROM patients WHERE access_token = ?', [req.params.token])
+    if (!patient) return res.status(404).json({ error: 'Patient not found' })
+    res.json(patient)
+  } catch (err) {
+    next(err)
+  }
+})
+
 // GET пациент по ID
 router.get('/:id', async (req, res, next) => {
   try {
@@ -36,13 +47,13 @@ router.post('/', async (req, res, next) => {
     }
 
     const id = uuidv4()
-    const publicToken = uuidv4()
+    const accessToken = crypto.randomBytes(32).toString('hex')
     const now = new Date().toISOString().slice(0, 19).replace('T', ' ')
 
     await dbRun(
-      `INSERT INTO patients (id, name, email, phone, notes, public_token, created_at, updated_at)
+      `INSERT INTO patients (id, name, email, phone, notes, access_token, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [id, name, email, phone, notes, publicToken, now, now]
+      [id, name, email || null, phone || null, notes || null, accessToken, now, now]
     )
 
     const patient = await dbGet('SELECT * FROM patients WHERE id = ?', [id])
@@ -62,7 +73,7 @@ router.put('/:id', async (req, res, next) => {
       `UPDATE patients 
        SET name = ?, email = ?, phone = ?, notes = ?, updated_at = ?
        WHERE id = ?`,
-      [name, email, phone, notes, now, req.params.id]
+      [name || null, email || null, phone || null, notes || null, now, req.params.id]
     )
 
     const patient = await dbGet('SELECT * FROM patients WHERE id = ?', [req.params.id])
@@ -78,20 +89,6 @@ router.delete('/:id', async (req, res, next) => {
   try {
     await dbRun('DELETE FROM patients WHERE id = ?', [req.params.id])
     res.json({ success: true })
-  } catch (err) {
-    next(err)
-  }
-})
-
-// GET пациент по токену доступа (публичный доступ)
-router.get('/token/:token', async (req, res, next) => {
-  try {
-    const patient = await dbGet('SELECT * FROM patients WHERE public_token = ?', [req.params.token])
-    if (!patient) return res.status(404).json({ error: 'Patient not found' })
-    
-    // Для публичного доступа не показываем чувствительные данные
-    const { public_token, ...publicData } = patient
-    res.json(publicData)
   } catch (err) {
     next(err)
   }

@@ -8,11 +8,25 @@ const router = express.Router()
 router.get('/', async (req, res, next) => {
   try {
     const templates = await dbAll('SELECT * FROM templates ORDER BY created_at DESC')
-    const parsed = templates.map(t => ({
-      ...t,
-      videoIds: JSON.parse(t.video_ids || '[]'),
-      tags: JSON.parse(t.tags || '[]')
-    }))
+    const parsed = templates.map(t => {
+      try {
+        const videoIds = typeof t.video_ids === 'string' ? JSON.parse(t.video_ids || '[]') : (Array.isArray(t.video_ids) ? t.video_ids : [])
+        const tags = typeof t.tags === 'string' ? JSON.parse(t.tags || '[]') : (Array.isArray(t.tags) ? t.tags : [])
+        
+        return {
+          ...t,
+          videoIds: videoIds,
+          tags: tags
+        }
+      } catch (e) {
+        console.error('Error parsing template JSON:', t)
+        return {
+          ...t,
+          videoIds: [],
+          tags: []
+        }
+      }
+    })
     res.json(parsed)
   } catch (err) {
     next(err)
@@ -34,12 +48,18 @@ router.post('/', async (req, res, next) => {
     await dbRun(
       `INSERT INTO templates (id, name, description, video_ids, tags, created_at)
        VALUES (?, ?, ?, ?, ?, ?)`,
-      [id, name, description, JSON.stringify(videoIds || []), JSON.stringify(tags || []), now]
+      [id, name, description || null, JSON.stringify(videoIds || []), JSON.stringify(tags || []), now]
     )
 
     const template = await dbGet('SELECT * FROM templates WHERE id = ?', [id])
-    template.videoIds = JSON.parse(template.video_ids || '[]')
-    template.tags = JSON.parse(template.tags || '[]')
+    try {
+      template.videoIds = typeof template.video_ids === 'string' ? JSON.parse(template.video_ids || '[]') : (Array.isArray(template.video_ids) ? template.video_ids : [])
+      template.tags = typeof template.tags === 'string' ? JSON.parse(template.tags || '[]') : (Array.isArray(template.tags) ? template.tags : [])
+    } catch (e) {
+      console.error('Error parsing template JSON:', template)
+      template.videoIds = []
+      template.tags = []
+    }
     
     res.status(201).json(template)
   } catch (err) {
@@ -56,14 +76,20 @@ router.put('/:id', async (req, res, next) => {
       `UPDATE templates 
        SET name = ?, description = ?, video_ids = ?, tags = ?
        WHERE id = ?`,
-      [name, description, JSON.stringify(videoIds || []), JSON.stringify(tags || []), req.params.id]
+      [name, description || null, JSON.stringify(videoIds || []), JSON.stringify(tags || []), req.params.id]
     )
 
     const template = await dbGet('SELECT * FROM templates WHERE id = ?', [req.params.id])
     if (!template) return res.status(404).json({ error: 'Template not found' })
     
-    template.videoIds = JSON.parse(template.video_ids || '[]')
-    template.tags = JSON.parse(template.tags || '[]')
+    try {
+      template.videoIds = typeof template.video_ids === 'string' ? JSON.parse(template.video_ids || '[]') : (Array.isArray(template.video_ids) ? template.video_ids : [])
+      template.tags = typeof template.tags === 'string' ? JSON.parse(template.tags || '[]') : (Array.isArray(template.tags) ? template.tags : [])
+    } catch (e) {
+      console.error('Error parsing template JSON:', template)
+      template.videoIds = []
+      template.tags = []
+    }
     res.json(template)
   } catch (err) {
     next(err)

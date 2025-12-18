@@ -1,5 +1,49 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
 
+// Upload API
+export const uploadApi = {
+  async uploadImage(file: Blob, filename: string): Promise<string> {
+    // Преобразуем blob в base64
+    const reader = new FileReader()
+    return new Promise((resolve, reject) => {
+      reader.onload = async () => {
+        const base64 = reader.result as string
+        try {
+          const res = await fetch(`${API_URL}/upload`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              file: base64,
+              filename: filename,
+            }),
+          })
+          if (!res.ok) {
+            const error = await res.json().catch(() => ({}))
+            throw new Error(error?.error || `Upload failed: ${res.status}`)
+          }
+          const data = await res.json()
+          resolve(data.url)
+        } catch (err) {
+          reject(err)
+        }
+      }
+      reader.onerror = () => reject(new Error('Failed to read file'))
+      reader.readAsDataURL(file)
+    })
+  },
+
+  async deleteImage(url: string): Promise<void> {
+    // Извлекаем filename из URL
+    const filename = url.split('/').pop()
+    if (!filename) throw new Error('Invalid URL')
+    
+    const res = await fetch(`${API_URL}/upload/${filename}`, {
+      method: 'DELETE',
+    })
+    if (!res.ok) throw new Error('Failed to delete image')
+  },
+}
+
 export interface Video {
   id: string
   title: string
@@ -108,7 +152,11 @@ export const videosApi = {
         body_zones: video.bodyZones,
       }),
     })
-    if (!res.ok) throw new Error('Failed to update video')
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({}))
+      console.error('Failed to update video:', error)
+      throw new Error(error?.error || `Failed to update video: ${res.status}`)
+    }
     const v = await res.json()
     return {
       ...v,
@@ -133,7 +181,7 @@ export const patientsApi = {
     const patients = await res.json()
     return patients.map((p: any) => ({
       ...p,
-      publicToken: p.public_token,
+      accessToken: p.access_token,
       createdAt: p.created_at,
       updatedAt: p.updated_at,
     }))
@@ -145,7 +193,7 @@ export const patientsApi = {
     const p = await res.json()
     return {
       ...p,
-      publicToken: p.public_token,
+      accessToken: p.access_token,
       createdAt: p.created_at,
       updatedAt: p.updated_at,
     }
@@ -157,13 +205,13 @@ export const patientsApi = {
     const p = await res.json()
     return {
       ...p,
-      publicToken: p.public_token,
+      accessToken: p.access_token,
       createdAt: p.created_at,
       updatedAt: p.updated_at,
     }
   },
 
-  async create(patient: Omit<Patient, 'id' | 'publicToken' | 'createdAt' | 'updatedAt'>): Promise<Patient> {
+  async create(patient: Omit<Patient, 'id' | 'accessToken' | 'createdAt' | 'updatedAt'>): Promise<Patient> {
     const res = await fetch(`${API_URL}/patients`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -173,7 +221,7 @@ export const patientsApi = {
     const p = await res.json()
     return {
       ...p,
-      publicToken: p.public_token,
+      accessToken: p.access_token,
       createdAt: p.created_at,
       updatedAt: p.updated_at,
     }
@@ -189,7 +237,7 @@ export const patientsApi = {
     const p = await res.json()
     return {
       ...p,
-      publicToken: p.public_token,
+      accessToken: p.access_token,
       createdAt: p.created_at,
       updatedAt: p.updated_at,
     }

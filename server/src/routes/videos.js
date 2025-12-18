@@ -8,7 +8,26 @@ const router = express.Router()
 router.get('/', async (req, res, next) => {
   try {
     const videos = await dbAll('SELECT * FROM videos ORDER BY created_at DESC')
-    res.json(videos)
+    const parsed = videos.map(v => {
+      try {
+        const tags = typeof v.tags === 'string' ? JSON.parse(v.tags || '[]') : (Array.isArray(v.tags) ? v.tags : [])
+        const bodyZones = typeof v.body_zones === 'string' ? JSON.parse(v.body_zones || '[]') : (Array.isArray(v.body_zones) ? v.body_zones : [])
+        
+        return {
+          ...v,
+          tags: tags,
+          bodyZones: bodyZones
+        }
+      } catch (e) {
+        console.error('Error parsing video JSON:', v)
+        return {
+          ...v,
+          tags: [],
+          bodyZones: []
+        }
+      }
+    })
+    res.json(parsed)
   } catch (err) {
     next(err)
   }
@@ -19,6 +38,16 @@ router.get('/:id', async (req, res, next) => {
   try {
     const video = await dbGet('SELECT * FROM videos WHERE id = ?', [req.params.id])
     if (!video) return res.status(404).json({ error: 'Video not found' })
+    
+    try {
+      video.tags = typeof video.tags === 'string' ? JSON.parse(video.tags || '[]') : (Array.isArray(video.tags) ? video.tags : [])
+      video.bodyZones = typeof video.body_zones === 'string' ? JSON.parse(video.body_zones || '[]') : (Array.isArray(video.body_zones) ? video.body_zones : [])
+    } catch (e) {
+      console.error('Error parsing video JSON:', video)
+      video.tags = []
+      video.bodyZones = []
+    }
+    
     res.json(video)
   } catch (err) {
     next(err)
@@ -44,6 +73,14 @@ router.post('/', async (req, res, next) => {
     )
 
     const video = await dbGet('SELECT * FROM videos WHERE id = ?', [id])
+    try {
+      video.tags = typeof video.tags === 'string' ? JSON.parse(video.tags || '[]') : (Array.isArray(video.tags) ? video.tags : [])
+      video.bodyZones = typeof video.body_zones === 'string' ? JSON.parse(video.body_zones || '[]') : (Array.isArray(video.body_zones) ? video.body_zones : [])
+    } catch (e) {
+      console.error('Error parsing video JSON:', video)
+      video.tags = []
+      video.bodyZones = []
+    }
     res.status(201).json(video)
   } catch (err) {
     next(err)
@@ -65,6 +102,15 @@ router.put('/:id', async (req, res, next) => {
 
     const video = await dbGet('SELECT * FROM videos WHERE id = ?', [req.params.id])
     if (!video) return res.status(404).json({ error: 'Video not found' })
+    
+    try {
+      video.tags = typeof video.tags === 'string' ? JSON.parse(video.tags || '[]') : (Array.isArray(video.tags) ? video.tags : [])
+      video.bodyZones = typeof video.body_zones === 'string' ? JSON.parse(video.body_zones || '[]') : (Array.isArray(video.body_zones) ? video.body_zones : [])
+    } catch (e) {
+      console.error('Error parsing video JSON:', video)
+      video.tags = []
+      video.bodyZones = []
+    }
     res.json(video)
   } catch (err) {
     next(err)

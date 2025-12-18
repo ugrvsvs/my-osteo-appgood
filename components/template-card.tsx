@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { MoreVertical, Pencil, Trash2, VideoIcon } from "lucide-react"
+import { getThumbnailSrcUrl } from "@/lib/utils"
 
 interface TemplateCardProps {
   template: Template
@@ -55,7 +56,7 @@ export function TemplateCard({ template, videos, onEdit, onDelete }: TemplateCar
             {validVideos.slice(0, 4).map((video) => (
               <div key={video.id} className="flex-shrink-0 w-16 h-10 rounded overflow-hidden bg-muted">
                 <img
-                  src={video.thumbnailUrl || `${process.env.NEXT_PUBLIC_BASE_PATH || ""}/placeholder.svg?height=40&width=64&query=${video.title}`}
+                  src={getThumbnailSrcUrl(video.thumbnailUrl)}
                   alt={video.title}
                   className="w-full h-full object-cover"
                 />

@@ -3,7 +3,9 @@
 import { useEffect, useState } from "react"
 import { useParams } from "next/navigation"
 import { getData, recordVideoView } from "@/lib/storage"
+import { patientsApi, assignmentsApi, videosApi } from "@/lib/api"
 import type { Patient, Assignment, Video, VideoView as VideoViewType } from "@/lib/types"
+import { getThumbnailSrcUrl } from "@/lib/utils"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -30,40 +32,79 @@ export default function PublicPatientPortalPage() {
 
   // Инициализация данных
   useEffect(() => {
-    try {
-      if (!token) {
-        setError("Ошибка: токен доступа не найден в URL")
+    const loadPatientData = async () => {
+      try {
+        if (!token) {
+          setError("Ошибка: токен доступа не найден в URL")
+          setLoading(false)
+          return
+        }
+
+        // Сначала пытаемся получить пациента с backend по токену
+        let foundPatient: Patient | null = null
+        try {
+          foundPatient = await patientsApi.getByToken(token)
+        } catch (err) {
+          console.log("Backend patient not found, checking local storage...")
+        }
+
+        // Если не найдено в backend, ищем в локальном хранилище
+        if (!foundPatient) {
+          const data = getData()
+          foundPatient = data.patients.find((p) => p.accessToken === token) || null
+        }
+
+        if (!foundPatient) {
+          setError("Ссылка не найдена или истекла. Свяжитесь с врачом.")
+          setLoading(false)
+          return
+        }
+
+        // Загружаем все данные с сервера
+        let allVideos: Video[] = []
+        let patientAssignments: Assignment[] = []
+        
+        try {
+          // Получаем видео с сервера
+          allVideos = await videosApi.getAll()
+        } catch (err) {
+          console.log("Failed to load videos from API, using local storage")
+          const data = getData()
+          allVideos = data.videos
+        }
+
+        try {
+          // Получаем назначения пациента с сервера
+          const allAssignments = await assignmentsApi.getByPatientId(foundPatient.id)
+          // Фильтруем активные и не истекшие назначения
+          patientAssignments = allAssignments.filter((a) => {
+            if (!a.isActive) return false
+            if (a.expiresAt && new Date(a.expiresAt) < new Date()) return false
+            return true
+          })
+        } catch (err) {
+          console.log("Failed to load assignments from API, using local storage")
+          const data = getData()
+          patientAssignments = data.assignments.filter((a) => {
+            if (a.patientId !== foundPatient.id) return false
+            if (!a.isActive) return false
+            if (a.expiresAt && new Date(a.expiresAt) < new Date()) return false
+            return true
+          })
+        }
+
+        setPatient(foundPatient)
+        setAssignments(patientAssignments)
+        setVideos(allVideos)
         setLoading(false)
-        return
-      }
-
-      const data = getData()
-      const foundPatient = data.patients.find((p) => p.accessToken === token)
-
-      if (!foundPatient) {
-        setError("Ссылка не найдена или истекла. Свяжитесь с врачом.")
+      } catch (err) {
+        console.error("Ошибка загрузки данных:", err)
+        setError("Ошибка при загрузке. Попробуйте позже.")
         setLoading(false)
-        return
       }
-
-      // Получаем активные назначения (не истекшие и активные)
-      const patientAssignments = data.assignments.filter((a) => {
-        if (a.patientId !== foundPatient.id) return false
-        if (!a.isActive) return false
-        if (a.expiresAt && new Date(a.expiresAt) < new Date()) return false
-        return true
-      })
-
-      setPatient(foundPatient)
-      setAssignments(patientAssignments)
-      setVideos(data.videos)
-      setViews(data.videoViews.filter((v) => v.patientId === foundPatient.id))
-      setLoading(false)
-    } catch (err) {
-      console.error("Ошибка загрузки данных:", err)
-      setError("Ошибка при загрузке. Попробуйте позже.")
-      setLoading(false)
     }
+
+    loadPatientData()
   }, [token])
 
   // Вспомогательные функции
@@ -213,7 +254,7 @@ export default function PublicPatientPortalPage() {
                   <CardContent className="flex items-center gap-4 p-4">
                     <div className="relative w-32 h-20 rounded-lg overflow-hidden bg-muted flex-shrink-0">
                       <img
-                        src={video.thumbnailUrl || `${process.env.NEXT_PUBLIC_BASE_PATH || ""}/placeholder.svg?height=80&width=128&query=${video.title}`}
+                        src={getThumbnailSrcUrl(video.thumbnailUrl)}
                         alt={video.title}
                         loading="lazy"
                         className="w-full h-full object-cover"
