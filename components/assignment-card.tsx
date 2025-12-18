@@ -96,8 +96,8 @@ export function AssignmentCard({
                 <img
                   src={
                     video.thumbnailUrl ||
-                    `https://img.youtube.com/vi/${extractYoutubeId(video.url) || "/placeholder.svg"}/default.jpg` ||
-                    "/placeholder.svg"
+                    `https://img.youtube.com/vi/${extractYoutubeId(video.url) || "placeholder"}/default.jpg` ||
+                    `${process.env.NEXT_PUBLIC_BASE_PATH || ""}/placeholder.svg`
                   }
                   alt={video.title}
                   className="w-full h-full object-cover"

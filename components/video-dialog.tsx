@@ -149,7 +149,7 @@ export function VideoDialog({ open, onOpenChange, video, allTags }: VideoDialogP
             <div className="flex gap-4 items-start">
               {thumbnailUrl ? (
                 <div className="relative w-40 h-24 rounded-md overflow-hidden border bg-muted">
-                  <img src={thumbnailUrl || "/placeholder.svg"} alt="Превью" className="w-full h-full object-cover" />
+                  <img src={thumbnailUrl || `${process.env.NEXT_PUBLIC_BASE_PATH || ""}/placeholder.svg`} alt="Превью" className="w-full h-full object-cover" />
                   <Button
                     type="button"
                     variant="destructive"

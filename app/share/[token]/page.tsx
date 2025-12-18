@@ -213,7 +213,7 @@ export default function PublicPatientPortalPage() {
                   <CardContent className="flex items-center gap-4 p-4">
                     <div className="relative w-32 h-20 rounded-lg overflow-hidden bg-muted flex-shrink-0">
                       <img
-                        src={video.thumbnailUrl || `/placeholder.svg?height=80&width=128&query=${video.title}`}
+                        src={video.thumbnailUrl || `${process.env.NEXT_PUBLIC_BASE_PATH || ""}/placeholder.svg?height=80&width=128&query=${video.title}`}
                         alt={video.title}
                         loading="lazy"
                         className="w-full h-full object-cover"

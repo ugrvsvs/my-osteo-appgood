@@ -55,7 +55,7 @@ export function TemplateCard({ template, videos, onEdit, onDelete }: TemplateCar
             {validVideos.slice(0, 4).map((video) => (
               <div key={video.id} className="flex-shrink-0 w-16 h-10 rounded overflow-hidden bg-muted">
                 <img
-                  src={video.thumbnailUrl || `/placeholder.svg?height=40&width=64&query=${video.title}`}
+                  src={video.thumbnailUrl || `${process.env.NEXT_PUBLIC_BASE_PATH || ""}/placeholder.svg?height=40&width=64&query=${video.title}`}
                   alt={video.title}
                   className="w-full h-full object-cover"
                 />

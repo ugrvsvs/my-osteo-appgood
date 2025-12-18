@@ -255,7 +255,7 @@ export function AssignmentDialog({
                       />
                       <div className="w-20 h-12 rounded overflow-hidden bg-muted flex-shrink-0">
                         <img
-                          src={video.thumbnailUrl || `/placeholder.svg?height=48&width=80&query=${video.title}`}
+                          src={video.thumbnailUrl || `${process.env.NEXT_PUBLIC_BASE_PATH || ""}/placeholder.svg?height=48&width=80&query=${video.title}`}
                           alt={video.title}
                           className="w-full h-full object-cover"
                         />
@@ -311,7 +311,7 @@ export function AssignmentDialog({
                         <span className="w-6 text-center text-sm text-muted-foreground">{index + 1}</span>
                         <div className="w-20 h-12 rounded overflow-hidden bg-muted flex-shrink-0">
                           <img
-                            src={video.thumbnailUrl || `/placeholder.svg?height=48&width=80&query=${video.title}`}
+                            src={video.thumbnailUrl || `${process.env.NEXT_PUBLIC_BASE_PATH || ""}/placeholder.svg?height=48&width=80&query=${video.title}`}
                             alt={video.title}
                             className="w-full h-full object-cover"
                           />

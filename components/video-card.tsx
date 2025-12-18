@@ -20,8 +20,9 @@ interface VideoCardProps {
 }
 
 function getThumbnailUrl(video: Video): string {
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH || ""
   if (video.thumbnailUrl) return video.thumbnailUrl
-  return `/placeholder.svg?height=180&width=320&query=video ${video.title}`
+  return `${basePath}/placeholder.svg?height=180&width=320&query=video ${video.title}`
 }
 
 export function VideoCard({ video, viewMode, onEdit, onDelete, selectable, selected, onSelect }: VideoCardProps) {
@@ -40,7 +41,7 @@ export function VideoCard({ video, viewMode, onEdit, onDelete, selectable, selec
       >
         <CardContent className="flex items-center gap-4 p-4">
           <div className="relative h-20 w-36 flex-shrink-0 overflow-hidden rounded-md bg-muted">
-            <img src={thumbnail || "/placeholder.svg"} alt={video.title} className="h-full w-full object-cover" />
+            <img src={thumbnail || `${process.env.NEXT_PUBLIC_BASE_PATH || ""}/placeholder.svg`} alt={video.title} className="h-full w-full object-cover" />
             <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 hover:opacity-100 transition-opacity">
               <Play className="h-8 w-8 text-white" />
             </div>
@@ -99,7 +100,7 @@ export function VideoCard({ video, viewMode, onEdit, onDelete, selectable, selec
       onClick={selectable ? onSelect : undefined}
     >
       <div className="relative aspect-video bg-muted">
-        <img src={thumbnail || "/placeholder.svg"} alt={video.title} className="h-full w-full object-cover" />
+        <img src={thumbnail || `${process.env.NEXT_PUBLIC_BASE_PATH || ""}/placeholder.svg`} alt={video.title} className="h-full w-full object-cover" />
         <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 hover:opacity-100 transition-opacity">
           <Play className="h-12 w-12 text-white" />
         </div>

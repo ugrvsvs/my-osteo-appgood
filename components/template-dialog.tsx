@@ -209,7 +209,7 @@ export function TemplateDialog({ open, onOpenChange, template, videos }: Templat
                     />
                     <div className="w-16 h-10 rounded overflow-hidden bg-muted flex-shrink-0">
                       <img
-                        src={video.thumbnailUrl || `/placeholder.svg?height=40&width=64&query=${video.title}`}
+                        src={video.thumbnailUrl || `${process.env.NEXT_PUBLIC_BASE_PATH || ""}/placeholder.svg?height=40&width=64&query=${video.title}`}
                         alt={video.title}
                         className="w-full h-full object-cover"
                       />
