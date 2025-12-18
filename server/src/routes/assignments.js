@@ -49,7 +49,7 @@ router.post('/', async (req, res, next) => {
     }
 
     const id = uuidv4()
-    const now = new Date().toISOString()
+    const now = new Date().toISOString().slice(0, 19).replace('T', ' ')
 
     await dbRun(
       `INSERT INTO assignments (id, patient_id, title, description, video_ids, video_order, is_active, expires_at, created_at)

@@ -37,7 +37,7 @@ router.post('/', async (req, res, next) => {
 
     const id = uuidv4()
     const publicToken = uuidv4()
-    const now = new Date().toISOString()
+    const now = new Date().toISOString().slice(0, 19).replace('T', ' ')
 
     await dbRun(
       `INSERT INTO patients (id, name, email, phone, notes, public_token, created_at, updated_at)
@@ -56,7 +56,7 @@ router.post('/', async (req, res, next) => {
 router.put('/:id', async (req, res, next) => {
   try {
     const { name, email, phone, notes } = req.body
-    const now = new Date().toISOString()
+    const now = new Date().toISOString().slice(0, 19).replace('T', ' ')
 
     await dbRun(
       `UPDATE patients 

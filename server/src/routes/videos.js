@@ -35,12 +35,12 @@ router.post('/', async (req, res, next) => {
     }
 
     const id = uuidv4()
-    const now = new Date().toISOString()
+    const now = new Date().toISOString().slice(0, 19).replace('T', ' ')
 
     await dbRun(
       `INSERT INTO videos (id, title, url, description, thumbnail_url, duration, tags, body_zones, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [id, title, url, description, thumbnailUrl, duration, JSON.stringify(tags || []), JSON.stringify(bodyZones || []), now, now]
+      [id, title, url, description || null, thumbnailUrl || null, duration || null, JSON.stringify(tags || []), JSON.stringify(bodyZones || []), now, now]
     )
 
     const video = await dbGet('SELECT * FROM videos WHERE id = ?', [id])
@@ -54,13 +54,13 @@ router.post('/', async (req, res, next) => {
 router.put('/:id', async (req, res, next) => {
   try {
     const { title, url, description, thumbnailUrl, duration, tags, bodyZones } = req.body
-    const now = new Date().toISOString()
+    const now = new Date().toISOString().slice(0, 19).replace('T', ' ')
 
     await dbRun(
       `UPDATE videos 
        SET title = ?, url = ?, description = ?, thumbnail_url = ?, duration = ?, tags = ?, body_zones = ?, updated_at = ?
        WHERE id = ?`,
-      [title, url, description, thumbnailUrl, duration, JSON.stringify(tags || []), JSON.stringify(bodyZones || []), now, req.params.id]
+      [title, url, description || null, thumbnailUrl || null, duration || null, JSON.stringify(tags || []), JSON.stringify(bodyZones || []), now, req.params.id]
     )
 
     const video = await dbGet('SELECT * FROM videos WHERE id = ?', [req.params.id])

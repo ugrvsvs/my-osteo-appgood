@@ -29,7 +29,7 @@ router.post('/', async (req, res, next) => {
     }
 
     const id = uuidv4()
-    const now = new Date().toISOString()
+    const now = new Date().toISOString().slice(0, 19).replace('T', ' ')
 
     await dbRun(
       `INSERT INTO templates (id, name, description, video_ids, tags, created_at)
