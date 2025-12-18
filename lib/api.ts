@@ -83,7 +83,11 @@ export const videosApi = {
         body_zones: video.bodyZones,
       }),
     })
-    if (!res.ok) throw new Error('Failed to create video')
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({}))
+      console.error('Failed to create video:', error)
+      throw new Error(error?.error || `Failed to create video: ${res.status}`)
+    }
     const v = await res.json()
     return {
       ...v,
